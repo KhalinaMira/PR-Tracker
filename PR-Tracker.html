@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR-Tracker — Сбор заявок на бюджет 2027</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --primary:#2e9e5b;
+    --primary-dark:#1f7a44;
+    --accent:#e8721c;
+    --text:#1f2430;
+    --muted:#6b7280;
+    --border:#e2e6ed;
+    --danger:#e0454a;
+    --success:#2ea36b;
+    --warn:#e8a23c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    padding:16px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  header h1{font-size:18px;margin:0;font-weight:600;}
+  header .sub{font-size:12px;opacity:.8;margin-top:2px;}
+  .role-switch{display:flex;align-items:center;gap:8px;font-size:13px;}
+  select, input, textarea{
+    font-family:inherit;
+    font-size:14px;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--text);
+  }
+  .role-switch select{background:#fff;color:var(--text);min-width:220px;}
+  nav{
+    display:flex;
+    gap:4px;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:0 24px;
+    overflow-x:auto;
+  }
+  nav button{
+    background:none;
+    border:none;
+    padding:14px 16px;
+    font-size:14px;
+    cursor:pointer;
+    color:var(--muted);
+    border-bottom:3px solid transparent;
+    white-space:nowrap;
+  }
+  nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600;}
+  main{padding:20px 24px;max-width:1500px;margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* Dashboard */
+  .stats{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+  .stat-card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:16px 20px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06);
+    flex:1;min-width:180px;
+  }
+  .stat-card .label{font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .stat-card .value{font-size:24px;font-weight:700;color:var(--primary-dark);}
+  .stat-card.warn .value{color:var(--danger);}
+  .panel{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06);
+    margin-bottom:20px;
+  }
+  .panel h3{margin:0 0 12px;font-size:15px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .bar-label{width:110px;font-size:13px;flex-shrink:0;}
+  .bar-track{flex:1;background:#eef0f4;border-radius:6px;height:14px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--primary);border-radius:6px;}
+  .bar-value{width:120px;text-align:right;font-size:12px;color:var(--muted);flex-shrink:0;}
+
+  /* Filters */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .filters select, .filters input{min-width:150px;}
+
+  /* Kanban */
+  .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;}
+  .column{
+    background:#eef1f6;
+    border-radius:var(--radius);
+    min-width:240px;
+    flex:1;
+    padding:10px;
+  }
+  .column h4{
+    font-size:13px;
+    margin:0 0 10px;
+    color:var(--primary-dark);
+    display:flex;
+    justify-content:space-between;
+  }
+  .column h4 .count{
+    background:var(--primary);
+    color:#fff;
+    border-radius:10px;
+    padding:1px 8px;
+    font-size:11px;
+  }
+  .card{
+    background:#fff;
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:10px;
+    box-shadow:0 1px 2px rgba(0,0,0,.08);
+    cursor:pointer;
+    border-left:4px solid var(--primary);
+  }
+  .card.overdue{border-left-color:var(--danger);}
+  .card.blocked{border-left-color:var(--warn);}
+  .card .title{font-weight:600;font-size:13px;margin-bottom:4px;}
+  .card .meta{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{
+    display:inline-block;
+    font-size:10px;
+    padding:1px 6px;
+    border-radius:5px;
+    background:#eef1f6;
+    color:var(--primary-dark);
+  }
+  .tag.region{background:#e9f0ff;}
+  .tag.budget{background:#fff3e6;color:var(--accent);}
+  .tag.overdue{background:#fde8e8;color:var(--danger);}
+  .tag.blocked{background:#fff7e6;color:#b3791a;}
+
+  /* Form */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-grid .full{grid-column:1/-1;}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .form-grid input, .form-grid select, .form-grid textarea{width:100%;}
+  textarea{resize:vertical;min-height:70px;}
+  .btn{
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    padding:10px 20px;
+    border-radius:8px;
+    font-size:14px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn.secondary{background:#fff;color:var(--primary);border:1px solid var(--primary);}
+  .btn.danger{background:var(--danger);}
+  .actions{margin-top:16px;display:flex;gap:10px;}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.4);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .overlay.active{display:flex;}
+  .modal{
+    background:#fff;border-radius:var(--radius);padding:22px;
+    width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  }
+  .modal h3{margin-top:0;}
+  .modal .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .modal .row span:first-child{color:var(--muted);}
+  .status-track{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0;}
+  .status-track button{
+    font-size:11px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);
+    background:#f7f8fa;cursor:pointer;
+  }
+  .status-track button.current{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .history{font-size:12px;color:var(--muted);margin-top:10px;}
+  .history div{padding:3px 0;}
+  .close-x{position:absolute;top:14px;right:18px;cursor:pointer;font-size:18px;color:var(--muted);background:none;border:none;}
+  .empty{color:var(--muted);font-size:13px;padding:20px;text-align:center;}
+  .badge-role{
+    background:rgba(255,255,255,.15);
+    padding:3px 10px;border-radius:6px;font-size:12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>PR-Tracker — Сбор заявок на бюджет 2027</h1>
+    <div class="sub">Прототип (MVP) · Управление PR</div>
+  </div>
+  <div class="role-switch">
+    <span class="badge-role" id="roleBadge">Роль</span>
+    <select id="roleSelect">
+      <option value="manager">PR-менеджер</option>
+      <option value="head">Руководитель PR-отдела</option>
+      <option value="partner">Представитель отдела / региона</option>
+      <option value="exec">Руководство компании</option>
+    </select>
+  </div>
+</header>
+
+<nav id="nav"></nav>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="stats">
+      <div class="stat-card"><div class="label">Всего заявок</div><div class="value" id="statTotal">0</div></div>
+      <div class="stat-card"><div class="label">Суммарный бюджет, ₸</div><div class="value" id="statBudget">0</div></div>
+      <div class="stat-card warn"><div class="label">С блокером</div><div class="value" id="statBlocked">0</div></div>
+      <div class="stat-card warn"><div class="label">Просрочено</div><div class="value" id="statOverdue">0</div></div>
+    </div>
+    <div class="panel">
+      <h3>Бюджет по регионам</h3>
+      <div id="budgetByRegion"></div>
+    </div>
+    <div class="panel">
+      <h3>Заявки по статусам</h3>
+      <div id="byStatus"></div>
+    </div>
+  </section>
+
+  <!-- BOARD -->
+  <section class="view" id="view-board">
+    <div class="filters">
+      <select id="fType"><option value="">Тип проекта: все</option></select>
+      <select id="fDept"><option value="">Отдел-заказчик: все</option></select>
+      <select id="fRegion"><option value="">Регион: все</option></select>
+      <select id="fBlocked">
+        <option value="">Блокер: все</option>
+        <option value="yes">Есть блокер</option>
+        <option value="no">Без блокера</option>
+      </select>
+      <select id="fOverdue">
+        <option value="">Просрочка: все</option>
+        <option value="yes">Просрочено</option>
+        <option value="no">В срок</option>
+      </select>
+    </div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- NEW REQUEST -->
+  <section class="view" id="view-new">
+    <div class="panel" style="max-width:760px;">
+      <h3>Новая заявка на PR-проект / бюджет</h3>
+      <div class="form-grid">
+        <div class="full">
+          <label>Название проекта *</label>
+          <input id="inTitle" type="text" placeholder="Например: Запуск продукта X в Алматы">
+        </div>
+
+        <div>
+          <label>Тип проекта *</label>
+          <select id="inType">
+            <option value="Запуск продукта">Запуск продукта</option>
+            <option value="Кризисная коммуникация">Кризисная коммуникация</option>
+            <option value="Ивент">Ивент</option>
+            <option value="Публикация в СМИ">Публикация в СМИ</option>
+            <option value="__other">Другое (указать)</option>
+          </select>
+          <input id="inTypeOther" type="text" placeholder="Свой тип проекта" style="margin-top:6px;display:none;">
+        </div>
+
+        <div>
+          <label>Отдел-заказчик *</label>
+          <input id="inDept" type="text" placeholder="Например: Розничный бизнес">
+        </div>
+
+        <div class="full">
+          <label>Цель и ключевые сообщения (бриф) *</label>
+          <textarea id="inBrief" placeholder="Опишите цель, аудиторию и ключевые сообщения"></textarea>
+        </div>
+
+        <div>
+          <label>Контактное лицо заказчика *</label>
+          <input id="inContact" type="text" placeholder="Имя, должность">
+        </div>
+
+        <div>
+          <label>Дедлайн *</label>
+          <input id="inDeadline" type="date">
+        </div>
+
+        <div>
+          <label>Регион *</label>
+          <select id="inRegion">
+            <option value="Алматы">Алматы</option>
+            <option value="Астана">Астана</option>
+            <option value="Шымкент">Шымкент</option>
+            <option value="Караганда">Караганда</option>
+            <option value="Актобе">Актобе</option>
+            <option value="__other">Другое (указать)</option>
+          </select>
+          <input id="inRegionOther" type="text" placeholder="Свой регион" style="margin-top:6px;display:none;">
+        </div>
+
+        <div>
+          <label>Бюджет, ₸ *</label>
+          <input id="inBudget" type="number" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="submitRequest()">Отправить заявку</button>
+        <button class="btn secondary" onclick="resetForm()">Очистить</button>
+      </div>
+      <div id="formMsg" style="margin-top:10px;font-size:13px;"></div>
+    </div>
+  </section>
+
+  <!-- MY REQUESTS (for partner role) -->
+  <section class="view" id="view-mine">
+    <div class="panel">
+      <h3>Мои заявки</h3>
+      <table>
+        <thead><tr><th>Название</th><th>Тип</th><th>Регион</th><th>Бюджет, ₸</th><th>Статус</th><th>Дедлайн</th></tr></thead>
+        <tbody id="mineTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+const STATUSES = [
+  "Новая заявка","Бриф согласован","В работе","На согласовании",
+  "Готово к публикации","Опубликовано","Мониторинг результатов"
+];
+const TYPES = ["Запуск продукта","Кризисная коммуникация","Ивент","Публикация в СМИ"];
+const REGIONS = ["Алматы","Астана","Шымкент","Караганда","Актобе"];
+const STORAGE_KEY = "pr_tracker_requests_v1";
+const CURRENT_USER = "Вы (текущий пользователь)";
+
+let requests = [];
+let currentRole = "manager";
+
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){ requests = JSON.parse(raw); return; }
+  requests = seedData();
+  save();
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(requests)); }
+
+function seedData(){
+  const now = Date.now();
+  const day = 24*60*60*1000;
+  function mk(id,title,type,dept,region,budget,status,deadlineOffset,blocked,contact){
+    return {
+      id, title, type, dept, region, budget, status,
+      brief: "Краткое описание цели и ключевых сообщений проекта.",
+      contact, deadline: new Date(now + deadlineOffset*day).toISOString().slice(0,10),
+      blocker: blocked || "",
+      owner: "PR-менеджер Айгерим",
+      createdBy: "Отдел маркетинга",
+      history: [{status:"Новая заявка", date:new Date(now-10*day).toISOString().slice(0,10)},
+                {status, date:new Date(now-2*day).toISOString().slice(0,10)}]
+    };
+  }
+  return [
+    mk(1,"Запуск нового тарифа","Запуск продукта","Розничный бизнес","Алматы",4500000,"В работе",10,""),
+    mk(2,"Открытие филиала","Ивент","Развитие сети","Астана",2200000,"Новая заявка",-3,""),
+    mk(3,"Комментарий по утечке данных","Кризисная коммуникация","Служба безопасности","Шымкент",800000,"На согласовании",2,"Нет ответа от юр. отдела"),
+    mk(4,"Публикация в Forbes Kazakhstan","Публикация в СМИ","PR-отдел","Караганда",1500000,"Готово к публикации",15,""),
+    mk(5,"Региональный форум партнёров","Ивент","Корпоративные продажи","Актобе",3200000,"Бриф согласован",-1,"Ожидание брифа от заказчика"),
+    mk(6,"Кейс об импортозамещении","Публикация в СМИ","Производство","Алматы",600000,"Опубликовано",20,""),
+    mk(7,"Запуск мобильного приложения","Запуск продукта","IT-департамент","Астана",5000000,"Мониторинг результатов",30,""),
+  ];
+}
+
+function nextId(){ return requests.length ? Math.max(...requests.map(r=>r.id))+1 : 1; }
+
+function isOverdue(r){
+  if(["Опубликовано","Мониторинг результатов"].includes(r.status)) return false;
+  return new Date(r.deadline) < new Date(new Date().toISOString().slice(0,10));
+}
+
+// ---------- NAV ----------
+const NAV_BY_ROLE = {
+  manager: [["dashboard","Дашборд"],["board","Канбан-доска"],["new","Новая заявка"]],
+  head:    [["dashboard","Дашборд"],["board","Канбан-доска"],["new","Новая заявка"]],
+  partner: [["new","Подать заявку"],["mine","Мои заявки"]],
+  exec:    [["dashboard","Дашборд"]],
+};
+
+function renderNav(){
+  const nav = document.getElementById("nav");
+  nav.innerHTML = "";
+  const items = NAV_BY_ROLE[currentRole];
+  items.forEach((item,i)=>{
+    const btn = document.createElement("button");
+    btn.textContent = item[1];
+    btn.dataset.view = item[0];
+    if(i===0) btn.classList.add("active");
+    btn.onclick = ()=> showView(item[0]);
+    nav.appendChild(btn);
+  });
+  showView(items[0][0]);
+}
+
+function showView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-"+name).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.toggle("active", b.dataset.view===name);
+  });
+  if(name==="dashboard") renderDashboard();
+  if(name==="board") renderBoard();
+  if(name==="mine") renderMine();
+}
+
+document.getElementById("roleSelect").onchange = (e)=>{
+  currentRole = e.target.value;
+  const labels = {manager:"PR-менеджер", head:"Руководитель PR-отдела", partner:"Представитель отдела/региона", exec:"Руководство компании"};
+  document.getElementById("roleBadge").textContent = labels[currentRole];
+  renderNav();
+};
+document.getElementById("roleBadge").textContent = "PR-менеджер";
+
+// ---------- DASHBOARD ----------
+function renderDashboard(){
+  document.getElementById("statTotal").textContent = requests.length;
+  const totalBudget = requests.reduce((s,r)=>s+Number(r.budget||0),0);
+  document.getElementById("statBudget").textContent = totalBudget.toLocaleString("ru-RU");
+  document.getElementById("statBlocked").textContent = requests.filter(r=>r.blocker).length;
+  document.getElementById("statOverdue").textContent = requests.filter(isOverdue).length;
+
+  const byRegion = {};
+  requests.forEach(r=>{ byRegion[r.region] = (byRegion[r.region]||0) + Number(r.budget||0); });
+  const maxRegion = Math.max(1, ...Object.values(byRegion));
+  const regionDiv = document.getElementById("budgetByRegion");
+  regionDiv.innerHTML = Object.keys(byRegion).length ? "" : '<div class="empty">Нет данных</div>';
+  Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).forEach(([region,sum])=>{
+    regionDiv.innerHTML += `
+      <div class="bar-row">
+        <div class="bar-label">${region}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${sum/maxRegion*100}%"></div></div>
+        <div class="bar-value">${sum.toLocaleString("ru-RU")} ₸</div>
+      </div>`;
+  });
+
+  const byStatus = {};
+  STATUSES.forEach(s=>byStatus[s]=0);
+  requests.forEach(r=>byStatus[r.status]++);
+  const maxStatus = Math.max(1, ...Object.values(byStatus));
+  const statusDiv = document.getElementById("byStatus");
+  statusDiv.innerHTML = "";
+  STATUSES.forEach(s=>{
+    statusDiv.innerHTML += `
+      <div class="bar-row">
+        <div class="bar-label">${s}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${byStatus[s]/maxStatus*100}%"></div></div>
+        <div class="bar-value">${byStatus[s]} заявок</div>
+      </div>`;
+  });
+}
+
+// ---------- FILTERS ----------
+function populateFilters(){
+  const fType = document.getElementById("fType");
+  const fDept = document.getElementById("fDept");
+  const fRegion = document.getElementById("fRegion");
+
+  const types = [...new Set(requests.map(r=>r.type))];
+  const depts = [...new Set(requests.map(r=>r.dept))];
+  const regions = [...new Set(requests.map(r=>r.region))];
+
+  fType.innerHTML = '<option value="">Тип проекта: все</option>' + types.map(t=>`<option value="${t}">${t}</option>`).join("");
+  fDept.innerHTML = '<option value="">Отдел-заказчик: все</option>' + depts.map(d=>`<option value="${d}">${d}</option>`).join("");
+  fRegion.innerHTML = '<option value="">Регион: все</option>' + regions.map(r=>`<option value="${r}">${r}</option>`).join("");
+}
+["fType","fDept","fRegion","fBlocked","fOverdue"].forEach(id=>{
+  document.addEventListener("DOMContentLoaded", ()=>{
+    document.getElementById(id).onchange = renderBoard;
+  });
+});
+
+function getFiltered(){
+  const fType = document.getElementById("fType").value;
+  const fDept = document.getElementById("fDept").value;
+  const fRegion = document.getElementById("fRegion").value;
+  const fBlocked = document.getElementById("fBlocked").value;
+  const fOverdue = document.getElementById("fOverdue").value;
+
+  return requests.filter(r=>{
+    if(fType && r.type!==fType) return false;
+    if(fDept && r.dept!==fDept) return false;
+    if(fRegion && r.region!==fRegion) return false;
+    if(fBlocked==="yes" && !r.blocker) return false;
+    if(fBlocked==="no" && r.blocker) return false;
+    if(fOverdue==="yes" && !isOverdue(r)) return false;
+    if(fOverdue==="no" && isOverdue(r)) return false;
+    return true;
+  });
+}
+
+// ---------- BOARD ----------
+function renderBoard(){
+  populateFilters();
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  const filtered = getFiltered();
+  STATUSES.forEach(status=>{
+    const items = filtered.filter(r=>r.status===status);
+    const col = document.createElement("div");
+    col.className = "column";
+    col.innerHTML = `<h4>${status} <span class="count">${items.length}</span></h4>`;
+    if(!items.length){
+      col.innerHTML += '<div class="empty" style="padding:10px;">Нет заявок</div>';
+    }
+    items.forEach(r=>{
+      const card = document.createElement("div");
+      card.className = "card" + (isOverdue(r)?" overdue":"") + (r.blocker && !isOverdue(r)?" blocked":"");
+      card.onclick = ()=>openModal(r.id);
+      card.innerHTML = `
+        <div class="title">${r.title}</div>
+        <div class="meta">
+          <span class="tag">${r.type}</span>
+          <span class="tag region">${r.region}</span>
+          <span class="tag budget">${Number(r.budget).toLocaleString("ru-RU")} ₸</span>
+          ${isOverdue(r) ? '<span class="tag overdue">Просрочено</span>' : ""}
+          ${r.blocker ? '<span class="tag blocked">Блокер</span>' : ""}
+        </div>`;
+      col.appendChild(card);
+    });
+    board.appendChild(col);
+  });
+}
+
+// ---------- MODAL ----------
+function openModal(id){
+  const r = requests.find(x=>x.id===id);
+  const canEdit = currentRole==="manager" || currentRole==="head";
+  const body = document.getElementById("modalBody");
+  body.innerHTML = `
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <h3>${r.title}</h3>
+    <div class="row"><span>Тип проекта</span><span>${r.type}</span></div>
+    <div class="row"><span>Отдел-заказчик</span><span>${r.dept}</span></div>
+    <div class="row"><span>Регион</span><span>${r.region}</span></div>
+    <div class="row"><span>Бюджет, ₸</span><span>${Number(r.budget).toLocaleString("ru-RU")}</span></div>
+    <div class="row"><span>Контактное лицо</span><span>${r.contact}</span></div>
+    <div class="row"><span>Дедлайн</span><span>${r.deadline}${isOverdue(r) ? " ⚠️ просрочено" : ""}</span></div>
+    <div class="row"><span>Ответственный PR-менеджер</span><span>${r.owner}</span></div>
+    <div class="row"><span>Бриф</span><span style="max-width:300px;text-align:right;">${r.brief}</span></div>
+
+    ${canEdit ? `
+    <label style="margin-top:12px;">Блокер (причина задержки)</label>
+    <input id="modalBlocker" type="text" value="${r.blocker}" placeholder="Например: ожидание согласования от юр. отдела">
+    <label style="margin-top:10px;">Статус</label>
+    <div class="status-track">
+      ${STATUSES.map(s=>`<button class="${s===r.status?'current':''}" onclick="changeStatus(${r.id}, '${s}')">${s}</button>`).join("")}
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="saveBlocker(${r.id})">Сохранить</button>
+    </div>
+    ` : `<div class="row"><span>Блокер</span><span>${r.blocker || "—"}</span></div>`}
+
+    <div class="history">
+      <strong>История статусов:</strong>
+      ${r.history.map(h=>`<div>${h.date} — ${h.status}</div>`).join("")}
+    </div>
+  `;
+  document.getElementById("overlay").classList.add("active");
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("active"); }
+
+function changeStatus(id, status){
+  const r = requests.find(x=>x.id===id);
+  if(r.status!==status){
+    r.status = status;
+    r.history.push({status, date:new Date().toISOString().slice(0,10)});
+    save();
+  }
+  openModal(id);
+  renderBoard();
+}
+function saveBlocker(id){
+  const r = requests.find(x=>x.id===id);
+  r.blocker = document.getElementById("modalBlocker").value.trim();
+  save();
+  closeModal();
+  renderBoard();
+}
+
+// ---------- NEW REQUEST FORM ----------
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("inType").onchange = (e)=>{
+    document.getElementById("inTypeOther").style.display = e.target.value==="__other" ? "block":"none";
+  };
+  document.getElementById("inRegion").onchange = (e)=>{
+    document.getElementById("inRegionOther").style.display = e.target.value==="__other" ? "block":"none";
+  };
+});
+
+function resetForm(){
+  ["inTitle","inDept","inBrief","inContact","inDeadline","inBudget","inTypeOther","inRegionOther"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("inType").value = TYPES[0];
+  document.getElementById("inRegion").value = REGIONS[0];
+  document.getElementById("inTypeOther").style.display="none";
+  document.getElementById("inRegionOther").style.display="none";
+  document.getElementById("formMsg").textContent = "";
+}
+
+function submitRequest(){
+  const title = document.getElementById("inTitle").value.trim();
+  let type = document.getElementById("inType").value;
+  if(type==="__other") type = document.getElementById("inTypeOther").value.trim();
+  const dept = document.getElementById("inDept").value.trim();
+  const brief = document.getElementById("inBrief").value.trim();
+  const contact = document.getElementById("inContact").value.trim();
+  const deadline = document.getElementById("inDeadline").value;
+  let region = document.getElementById("inRegion").value;
+  if(region==="__other") region = document.getElementById("inRegionOther").value.trim();
+  const budget = document.getElementById("inBudget").value;
+
+  const msg = document.getElementById("formMsg");
+  if(!title || !type || !dept || !brief || !contact || !deadline || !region || !budget){
+    msg.style.color = "var(--danger)";
+    msg.textContent = "Заполните все обязательные поля, включая бриф — без него заявка не попадает в работу.";
+    return;
+  }
+
+  const newReq = {
+    id: nextId(), title, type, dept, brief, contact, deadline, region,
+    budget: Number(budget), status: "Новая заявка", blocker: "",
+    owner: "Не назначен", createdBy: CURRENT_USER,
+    history: [{status:"Новая заявка", date:new Date().toISOString().slice(0,10)}]
+  };
+  requests.push(newReq);
+  save();
+  msg.style.color = "var(--success)";
+  msg.textContent = "Заявка отправлена и принята в работу.";
+  resetForm();
+  renderBoard();
+  renderMine();
+}
+
+// ---------- MY REQUESTS ----------
+function renderMine(){
+  const tbody = document.getElementById("mineTable");
+  const mine = requests.filter(r=>r.createdBy===CURRENT_USER);
+  tbody.innerHTML = mine.length ? "" : '<tr><td colspan="6" class="empty">Вы пока не подали ни одной заявки</td></tr>';
+  mine.forEach(r=>{
+    tbody.innerHTML += `<tr>
+      <td>${r.title}</td><td>${r.type}</td><td>${r.region}</td>
+      <td>${Number(r.budget).toLocaleString("ru-RU")}</td><td>${r.status}</td><td>${r.deadline}</td>
+    </tr>`;
+  });
+}
+
+// ---------- INIT ----------
+load();
+renderNav();
+</script>
+</body>
+</html>
